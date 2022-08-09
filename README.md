@@ -7,6 +7,8 @@
   <img src="./images/layouts.gif" width="100%"> 
   <i>5 of the available layouts. New layouts are easy to hardcode or generate programmatically.</i>
 </p>
+
+
 ## Modification
 
 This repo is forked from [HumanCompatibleAI/overcooked_ai](https://github.com/HumanCompatibleAI/overcooked_ai).
