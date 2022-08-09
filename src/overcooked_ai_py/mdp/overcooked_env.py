@@ -209,8 +209,9 @@ class OvercookedEnv(object):
         
         if done: self._add_episode_info(env_info)
 
-        timestep_sparse_reward = sum(mdp_infos["sparse_reward_by_agent"])
-        return (next_state, timestep_sparse_reward, done, env_info)
+        #timestep_sparse_reward = sum(mdp_infos["sparse_reward_by_agent"])
+        reward_info = mdp_infos["shaped_reward_split"]
+        return (next_state, reward_info, done, env_info)
 
     def lossless_state_encoding_mdp(self, state):
         """

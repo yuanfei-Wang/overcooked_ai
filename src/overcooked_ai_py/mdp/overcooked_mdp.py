@@ -1091,7 +1091,7 @@ class OvercookedGridworld(object):
         new_state = state.deepcopy()
 
         # Resolve interacts first
-        sparse_reward_by_agent, shaped_reward_by_agent = self.resolve_interacts(new_state, joint_action, events_infos)
+        sparse_reward_by_agent, shaped_reward_by_agent, shaped_reward_split = self.resolve_interacts(new_state, joint_action, events_infos)
 
         assert new_state.player_positions == state.player_positions
         assert new_state.player_orientations == state.player_orientations
@@ -1108,6 +1108,7 @@ class OvercookedGridworld(object):
             "event_infos": events_infos,
             "sparse_reward_by_agent": sparse_reward_by_agent,
             "shaped_reward_by_agent": shaped_reward_by_agent,
+            "shaped_reward_split": shaped_reward_split,
         }
         if display_phi:
             assert motion_planner is not None, "motion planner must be defined if display_phi is true"
@@ -1125,6 +1126,8 @@ class OvercookedGridworld(object):
         pot_states = self.get_pot_states(new_state)
         # We divide reward by agent to keep track of who contributed
         sparse_reward, shaped_reward = [0] * self.num_players, [0] * self.num_players 
+        shaped_reward_split = [{"DISH_PICKUP_REWARD":0, "SOUP_PICKUP_REWARD":0, "PLACEMENT_IN_POT_REW":0},\
+            {"DISH_PICKUP_REWARD":0, "SOUP_PICKUP_REWARD":0, "PLACEMENT_IN_POT_REW":0}, 0]
 
         for player_idx, (player, action) in enumerate(zip(new_state.players, joint_action)):
 
@@ -1173,6 +1176,7 @@ class OvercookedGridworld(object):
                 # Give shaped reward if pickup is useful
                 if self.is_dish_pickup_useful(new_state, pot_states):
                     shaped_reward[player_idx] += self.reward_shaping_params["DISH_PICKUP_REWARD"]
+                    shaped_reward_split[player_idx]["DISH_PICKUP_REWARD"] += self.reward_shaping_params["DISH_PICKUP_REWARD"]
 
                 # Perform dish pickup from dispenser
                 obj = ObjectState('dish', pos)
@@ -1194,6 +1198,7 @@ class OvercookedGridworld(object):
                     obj = new_state.remove_object(i_pos) # Get soup
                     player.set_object(obj)
                     shaped_reward[player_idx] += self.reward_shaping_params["SOUP_PICKUP_REWARD"]
+                    shaped_reward_split[player_idx]["SOUP_PICKUP_REWARD"] += self.reward_shaping_params["SOUP_PICKUP_REWARD"]
 
                 elif player.get_object().name in Recipe.ALL_INGREDIENTS:
                     # Adding ingredient to soup
@@ -1209,6 +1214,7 @@ class OvercookedGridworld(object):
                         obj = player.remove_object()
                         soup.add_ingredient(obj)
                         shaped_reward[player_idx] += self.reward_shaping_params["PLACEMENT_IN_POT_REW"]
+                        shaped_reward_split[player_idx]["PLACEMENT_IN_POT_REW"] += self.reward_shaping_params["PLACEMENT_IN_POT_REW"]
 
                         # Log potting
                         self.log_object_potting(events_infos, new_state, old_soup, soup, obj.name, player_idx)
@@ -1221,11 +1227,13 @@ class OvercookedGridworld(object):
 
                     delivery_rew = self.deliver_soup(new_state, player, obj)
                     sparse_reward[player_idx] += delivery_rew
+                    shaped_reward[player_idx] += delivery_rew
+                    shaped_reward_split[-1] += delivery_rew
 
                     # Log soup delivery
                     events_infos['soup_delivery'][player_idx] = True                        
 
-        return sparse_reward, shaped_reward
+        return sparse_reward, shaped_reward, shaped_reward_split
 
     def get_recipe_value(self, state, recipe, discounted=False, base_recipe=None, potential_params={}):
         """
@@ -1855,7 +1863,7 @@ class OvercookedGridworld(object):
         return np.array(list(self.shape) + [26])
 
     def get_lossless_state_encoding_shape(self):
-        return np.array(list(self.shape) + [26])
+        return np.array([26] + list(self.shape))
 
 
     def lossless_state_encoding(self, overcooked_state, horizon=400, debug=False):
@@ -1960,9 +1968,9 @@ class OvercookedGridworld(object):
 
             # Stack of all the state masks, order decided by order of LAYERS
             state_mask_stack = np.array([state_mask_dict[layer_id] for layer_id in LAYERS])
-            state_mask_stack = np.transpose(state_mask_stack, (1, 2, 0))
-            assert state_mask_stack.shape[:2] == self.shape
-            assert state_mask_stack.shape[2] == len(LAYERS)
+            # state_mask_stack = np.transpose(state_mask_stack, (1, 2, 0))
+            assert state_mask_stack.shape[1:] == self.shape
+            assert state_mask_stack.shape[0] == len(LAYERS)
             # NOTE: currently not including time left or order_list in featurization
             return np.array(state_mask_stack).astype(int)
 
