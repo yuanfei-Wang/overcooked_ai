@@ -13,9 +13,11 @@
 
 This repo is forked from [HumanCompatibleAI/overcooked_ai](https://github.com/HumanCompatibleAI/overcooked_ai).
 
-The only differences are in overcooked_mdp.py and overcooked_env.py
+The only differences are in overcooked_mdp.py, overcooked_env.py and state_visualizer
 
 Specifically, the lossless state encoding and the reward function is modified a little bit to fit our experiment.
+
+The environment vairable SDL_AUDIODRIVER is changed for pygame initialization on Ubuntu Server
 
 
 

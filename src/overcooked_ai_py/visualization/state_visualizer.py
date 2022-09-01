@@ -7,6 +7,8 @@ from overcooked_ai_py.visualization.visualization_utils import show_image_in_ipy
 from overcooked_ai_py.visualization.pygame_utils import MultiFramePygameImage, run_static_resizeable_window, vstack_surfaces, scale_surface_by_factor, blit_on_new_surface_of_size
 from overcooked_ai_py.mdp.actions import Direction, Action
 
+os.environ['SDL_AUDIODRIVER'] = 'dsp'
+
 roboto_path = os.path.join(FONTS_DIR, "Roboto-Regular.ttf")
 
 
